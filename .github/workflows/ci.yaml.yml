@@ -1,0 +1,50 @@
+# 工作流名称
+name: ci
+
+# 触发条件
+on:
+  push:
+    branches:
+      - master    # 推送到 master 分支时触发
+      - main      # 推送到 main 分支时触发
+
+# 授予工作流写入仓库内容的权限
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    # 使用最新的 Ubuntu 运行环境
+    runs-on: ubuntu-latest
+
+    steps:
+      # 第一步：检出仓库代码
+      - uses: actions/checkout@v4
+
+      # 第二步：配置 Git 用户信息
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      # 第三步：安装 Python 环境
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      # 第四步：生成缓存 ID（按周缓存）
+      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+
+      # 第五步：缓存 MkDocs 下载的数据
+      - uses: actions/cache@v4
+        with:
+          key: mkdocs-material-${{ env.cache_id }}
+          path: .cache
+          restore-keys: |
+            mkdocs-material-
+
+      # 第六步：安装 Material for MkDocs
+      - run: pip install mkdocs-material
+
+      # 第七步：构建并部署到 GitHub Pages
+      - run: mkdocs gh-deploy --force
